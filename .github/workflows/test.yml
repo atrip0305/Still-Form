@@ -1,0 +1,35 @@
+name: Assessment Test Suite
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Candidate PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Anti-Cheat: Restore authoritative tests from upstream repository
+      - name: Restore Authoritative Tests
+        run: |
+          git fetch origin main
+          git checkout origin/main -- test/ || git checkout origin/main -- tests/ || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci || npm install
+
+      - name: Run Assessment Tests
+        run: |
+          npm test
